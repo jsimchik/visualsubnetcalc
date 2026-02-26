@@ -29,6 +29,13 @@ let infoColumnCount = 5
 //     - Net+0 = Network Address
 //     - Net+1 = OCI Reserved - Default Gateway Address
 //     - Last = Broadcast Address
+// GCP mode:
+//   - Smallest subnet: /29
+//   - Four reserved addresses per subnet:
+//     - Net+0 = Network Address
+//     - Net+1 = GCP Reserved - Default Gateway
+//     - Net+Last-1 = GCP Reserved - Future Use
+//     - Last = Broadcast Address
 let noteTimeout;
 let operatingMode = 'Standard'
 let previousOperatingMode = 'Standard'
@@ -40,6 +47,7 @@ const netsizePatterns = {
     Standard: '^([12]?[0-9]|3[0-2])$',
     AZURE: '^([12]?[0-9])$',
     AWS: '^(1?[0-9]|2[0-8])$',
+    GCP: '^([12]?[0-9])$',
     OCI: '^([12]?[0-9]|30)$',
 };
 
@@ -47,6 +55,7 @@ const minSubnetSizes = {
     Standard: 32,
     AZURE: 29,
     AWS: 28,
+    GCP: 29,
     OCI: 30,
 };
 
@@ -124,6 +133,16 @@ $('#dropdown_azure').click(function() {
 $('#dropdown_aws').click(function() {
     previousOperatingMode = operatingMode;
     operatingMode = 'AWS';
+
+    if(!switchMode(operatingMode)) {
+        operatingMode = previousOperatingMode;
+        $('#dropdown_'+ operatingMode.toLowerCase()).addClass('active');
+    }
+});
+
+$('#dropdown_gcp').click(function() {
+    previousOperatingMode = operatingMode;
+    operatingMode = 'GCP';
 
     if(!switchMode(operatingMode)) {
         operatingMode = previousOperatingMode;
@@ -279,7 +298,7 @@ function addRow(network, netSize, colspan, note, notesWidth, color, operatingMod
     let addressFirst = ip2int(network)
     let addressLast = subnet_last_address(addressFirst, netSize)
     let usableFirst = subnet_usable_first(addressFirst, netSize, operatingMode)
-    let usableLast = subnet_usable_last(addressFirst, netSize)
+    let usableLast = subnet_usable_last(addressFirst, netSize, operatingMode)
     let hostCount = 1 + usableLast - usableFirst
     let styleTag = ''
     if (color !== '') {
@@ -432,14 +451,17 @@ function subnet_usable_first(network, netSize, operatingMode) {
         // AWS reserves 3 additional IPs
         // https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq#are-there-any-restrictions-on-using-ip-addresses-within-these-subnets
         // Azure reserves 3 additional IPs
+        // https://cloud.google.com/vpc/docs/subnets
+        // GCP reserves 2 additional IPs at the start
         // https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/overview.htm#Reserved__reserved_subnet
-        // OCI reserves 2 additional IPs
+        // OCI reserves 1 additional IP
         //return network + (operatingMode == 'Standard' ? 1 : 4);
         switch (operatingMode) {
             case 'AWS':
             case 'AZURE':
                 return network + 4;
                 break;
+            case 'GCP':
             case 'OCI':
                 return network + 2;
                 break;
@@ -452,10 +474,15 @@ function subnet_usable_first(network, netSize, operatingMode) {
     }
 }
 
-function subnet_usable_last(network, netSize) {
+function subnet_usable_last(network, netSize, operatingMode) {
     let last_address = subnet_last_address(network, netSize);
     if (netSize < 31) {
-        return last_address - 1;
+        // GCP reserves the last 2 addresses (second-to-last and broadcast)
+        if (operatingMode === 'GCP') {
+            return last_address - 2;
+        } else {
+            return last_address - 1;
+        }
     } else {
         return last_address;
     }
@@ -618,6 +645,9 @@ function mutate_subnet_map(verb, network, subnetTree, propValue = '') {
                         case 'AZURE':
                             var modal_error_message = 'The minimum IPv4 subnet size for Azure is /' + minSubnetSizes[operatingMode] + '.<br/><br/>More Information:<br/><a href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq#how-small-and-how-large-can-virtual-networks-and-subnets-be" target="_blank" rel="noopener noreferrer">Azure Virtual Network FAQ > How small and how large can virtual networks and subnets be?</a>'
                             break;
+                        case 'GCP':
+                            var modal_error_message = 'The minimum IPv4 subnet size for GCP is /' + minSubnetSizes[operatingMode] + '.<br/><br/>More Information:<br/><a href="https://cloud.google.com/vpc/docs/subnets#unusable-ip-addresses-in-every-subnet" target="_blank" rel="noopener noreferrer">Google Cloud VPC > Subnets > Unusable addresses in IPv4 subnet ranges</a>'
+                            break;
                         case 'OCI':
                             var modal_error_message = 'The minimum IPv4 subnet size for OCI is /' + minSubnetSizes[operatingMode] + '.<br/><br/>More Information:<br/><a href="https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/overview.htm#Reserved__reserved_subnet" target="_blank" rel="noopener noreferrer">Infrastructure Services>Networking>Networking Overview>Three IP Addresses in Each Subnet</a>'
                             break;
@@ -669,6 +699,9 @@ function switchMode(operatingMode) {
                 case 'AZURE':
                     var validate_error_message = 'Azure Mode - Smallest size is /' + minSubnetSizes[operatingMode]
                     break;
+                case 'GCP':
+                    var validate_error_message = 'GCP Mode - Smallest size is /' + minSubnetSizes[operatingMode]
+                    break;
                 case 'OCI':
                     var validate_error_message = 'OCI Mode - Smallest size is /' + minSubnetSizes[operatingMode]
                     break;
@@ -688,7 +721,7 @@ function switchMode(operatingMode) {
                 }
             });
             // Remove active class from all buttons if needed
-            $('#dropdown_standard, #dropdown_azure, #dropdown_aws, #dropdown_oci').removeClass('active');
+            $('#dropdown_standard, #dropdown_azure, #dropdown_aws, #dropdown_gcp, #dropdown_oci').removeClass('active');
             $('#dropdown_' + operatingMode.toLowerCase()).addClass('active');
             isSwitched = true;
         } else {
@@ -698,6 +731,9 @@ function switchMode(operatingMode) {
                     break;
                 case 'AZURE':
                     var modal_error_message = 'One or more subnets are smaller than the minimum allowed for Azure.<br/>The smallest size allowed is /' + minSubnetSizes[operatingMode] + '.<br/>See: <a href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq#how-small-and-how-large-can-virtual-networks-and-subnets-be" target="_blank" rel="noopener noreferrer">Azure Virtual Network FAQ > How small and how large can virtual networks and subnets be?</a>'
+                    break;
+                case 'GCP':
+                    var modal_error_message = 'One or more subnets are smaller than the minimum allowed for GCP.<br/>The smallest size allowed is /' + minSubnetSizes[operatingMode] + '.<br/>See: <a href="https://cloud.google.com/vpc/docs/subnets#unusable-ip-addresses-in-every-subnet" target="_blank" rel="noopener noreferrer">Google Cloud VPC > Subnets > Unusable addresses in IPv4 subnet ranges</a>'
                     break;
                 case 'OCI':
                     var modal_error_message = 'One or more subnets are smaller than the minimum allowed for OCI.<br/>The smallest size allowed is /' + minSubnetSizes[operatingMode] + '.<br/>See: <a href="https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/overview.htm#Reserved__reserved_subnet" target="_blank" rel="noopener noreferrer">Infrastructure Services>Networking>Networking Overview>Three IP Addresses in Each Subnet</a>'
@@ -746,6 +782,9 @@ function set_usable_ips_title(operatingMode) {
             break;
         case 'AZURE':
             $('#useableHeader').html('Usable IPs (<a href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq#are-there-any-restrictions-on-using-ip-addresses-within-these-subnets" target="_blank" rel="noopener noreferrer" style="color:#000; border-bottom: 1px dotted #000; text-decoration: dotted" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="Azure reserves 5 addresses in each subnet for platform use.<br/>Click to navigate to the Azure documentation.">Azure</a>)')
+            break;
+        case 'GCP':
+            $('#useableHeader').html('Usable IPs (<a href="https://cloud.google.com/vpc/docs/subnets#unusable-ip-addresses-in-every-subnet" target="_blank" rel="noopener noreferrer" style="color:#000; border-bottom: 1px dotted #000; text-decoration: dotted" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="GCP reserves 4 addresses in each subnet for platform use.<br/>Click to navigate to the GCP documentation.">GCP</a>)')
             break;
         case 'OCI':
             $('#useableHeader').html('Usable IPs (<a href="https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/overview.htm#Reserved__reserved_subnet" target="_blank" rel="noopener noreferrer" style="color:#000; border-bottom: 1px dotted #000; text-decoration: dotted" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="OCI reserves 3 addresses in each subnet for platform use.<br/>Click to navigate to the OCI documentation.">OCI</a>)')
