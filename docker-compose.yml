@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  visualsubnetcalc:
+    build: .
+    image: visualsubnetcalc:latest
+    container_name: visualsubnetcalc
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
+    networks:
+      - visualsubnetcalc-network
+
+networks:
+  visualsubnetcalc-network:
+    driver: bridge
