@@ -1056,3 +1056,45 @@ function sortIPCIDRs(obj) {
 }
 
 const rgba2hex = (rgba) => `#${rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+\.{0,1}\d*))?\)$/).slice(1).map((n, i) => (i === 3 ? Math.round(parseFloat(n) * 255) : parseFloat(n)).toString(16).padStart(2, '0').replace('NaN', '')).join('')}`
+
+// Dark mode toggle functionality
+function toggleDarkMode() {
+    const html = document.documentElement;
+    const isDarkMode = html.classList.contains('dark-mode');
+
+    if (isDarkMode) {
+        html.classList.remove('dark-mode');
+        localStorage.setItem('darkMode', 'false');
+    } else {
+        html.classList.add('dark-mode');
+        localStorage.setItem('darkMode', 'true');
+    }
+}
+
+// Initialize dark mode based on saved preference or system preference
+function initDarkMode() {
+    const savedDarkMode = localStorage.getItem('darkMode');
+    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+    if (savedDarkMode !== null) {
+        // Use saved preference
+        if (savedDarkMode === 'true') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    } else if (prefersDarkScheme.matches) {
+        // Use system preference
+        document.documentElement.classList.add('dark-mode');
+    }
+
+    // Set up the existing dark mode toggle button
+    const darkModeToggle = document.getElementById('dark_mode_toggle');
+    if (darkModeToggle) {
+        darkModeToggle.onclick = function(e) {
+            e.preventDefault();
+            toggleDarkMode();
+        };
+    }
+}
+
+// Initialize dark mode when the page loads
+document.addEventListener('DOMContentLoaded', initDarkMode);

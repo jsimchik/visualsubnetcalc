@@ -37,6 +37,13 @@
     --subpal-1-8: #ffc6ffff;
     --subpal-1-9: #e6e6e6ff;
     --subpal-1-10: #ffffffff;
+
+    /* Dark mode colors */
+    --dark-bg-primary: #1a1a1a;
+    --dark-bg-secondary: #2d2d2d;
+    --dark-text-primary: #ffffff;
+    --dark-text-secondary: #cccccc;
+    --dark-border: #444444;
 }
 
 .table>:not(caption)>*>* {
@@ -269,4 +276,165 @@
     writing-mode: vertical-rl;
     white-space: nowrap;
     padding-top: 0.25rem;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: var(--dark-bg-primary);
+        --bg-secondary: var(--dark-bg-secondary);
+        --text-primary: var(--dark-text-primary);
+        --text-secondary: var(--dark-text-secondary);
+        --border-color: var(--dark-border);
+    }
+
+    body {
+        background-color: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .container-xxl {
+        background-color: var(--bg-secondary);
+    }
+
+    .table {
+        color: var(--text-primary);
+    }
+
+    .table th {
+        color: var(--text-primary);
+    }
+
+    .table td {
+        color: var(--text-primary);
+    }
+
+    #navigation a {
+        color: var(--text-primary);
+    }
+
+    #subnet_input input {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+
+    #subnet_input select {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+
+    #calc td.split {
+        background-color: var(--split-background);
+        color: var(--split-foreground);
+    }
+
+    #calc td.join {
+        background-color: var(--join-background);
+        color: var(--join-foreground);
+    }
+
+    #calc td.split, #calc td.join {
+        border: 1px solid var(--border-color);
+    }
+
+    #notifyModal .modal-content {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    #notifyModal .modal-header {
+        background-color: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    #notifyModal .modal-footer {
+        background-color: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .modal-content {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .modal-header {
+        background-color: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-footer {
+        background-color: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .form-control {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+
+    .form-select {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+
+    .btn {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+
+    .btn:hover {
+        background-color: var(--bg-primary);
+    }
+
+    .btn-outline-primary {
+        color: var(--text-primary);
+        border-color: var(--border-color);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--bg-primary);
+    }
+
+    .nav-link {
+        color: var(--text-primary);
+    }
+
+    .nav-link:hover {
+        color: var(--text-secondary);
+    }
+
+    .card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .card-header {
+        background-color: var(--bg-primary);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-body {
+        color: var(--text-primary);
+    }
+
+    .alert {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+
+    .form-check-input {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .form-check-input:checked {
+        background-color: var(--join-background);
+        border-color: var(--join-background);
+    }
 }
